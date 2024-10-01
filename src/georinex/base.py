@@ -20,16 +20,16 @@ ENC = {"zlib": True, "complevel": 1, "fletcher32": True}
 
 def load(
     rinexfn: T.TextIO | str | Path,
-    out: Path = None,
-    use: set[str] = None,
-    tlim: tuple[datetime, datetime] = None,
+    out: Path | None = None,
+    use: set[str] | None = None,
+    tlim: tuple[datetime, datetime] | None = None,
     useindicators: bool = False,
-    meas: list[str] = None,
+    meas: list[str] | None = None,
     verbose: bool = False,
     *,
     overwrite: bool = False,
     fast: bool = True,
-    interval: float | int | timedelta = None,
+    interval: float | int | timedelta | None = None,
 ):
     """
     Reads OBS, NAV in RINEX 2.x and 3.x
@@ -110,15 +110,14 @@ def batch_convert(
     path: Path,
     glob: str,
     out: Path,
-    use: set[str] = None,
-    tlim: tuple[datetime, datetime] = None,
+    use: set[str] | None = None,
+    tlim: tuple[datetime, datetime] | None = None,
     useindicators: bool = False,
-    meas: list[str] = None,
+    meas: list[str] | None = None,
     verbose: bool = False,
     *,
     fast: bool = True,
 ):
-
     path = Path(path).expanduser()
 
     flist = (f for f in path.glob(glob) if f.is_file())
@@ -141,10 +140,10 @@ def batch_convert(
 
 def rinexnav(
     fn: T.TextIO | str | Path,
-    outfn: Path = None,
-    use: set[str] = None,
+    outfn: Path | None = None,
+    use: set[str] | None = None,
     group: str = "NAV",
-    tlim: tuple[datetime, datetime] = None,
+    tlim: tuple[datetime, datetime] | None = None,
     *,
     overwrite: bool = False,
 ) -> xarray.Dataset:
@@ -175,7 +174,7 @@ def rinexnav(
         wmode = _groupexists(outfn, group, overwrite)
 
         enc = {k: ENC for k in nav.data_vars}
-        nav.to_netcdf(outfn, group=group, mode=wmode, encoding=enc)
+        nav.to_netcdf(outfn, group=group, mode=wmode, encoding=enc, format="NETCDF4")
 
     return nav
 
@@ -185,17 +184,17 @@ def rinexnav(
 
 def rinexobs(
     fn: T.TextIO | Path,
-    outfn: Path = None,
-    use: set[str] = None,
+    outfn: Path | None = None,
+    use: set[str] | None = None,
     group: str = "OBS",
-    tlim: tuple[datetime, datetime] = None,
+    tlim: tuple[datetime, datetime] | None = None,
     useindicators: bool = False,
-    meas: list[str] = None,
+    meas: list[str] | None = None,
     verbose: bool = False,
     *,
     overwrite: bool = False,
     fast: bool = True,
-    interval: float | int | timedelta = None,
+    interval: float | int | timedelta | None = None,
 ):
     """
     Read RINEX 2.x and 3.x OBS files in ASCII or GZIP (or Hatanaka)
@@ -214,7 +213,7 @@ def rinexobs(
     # %% version selection
     info = rinexinfo(fn)
 
-    if int(info["version"]) in (1, 2):
+    if int(info["version"]) in {1, 2}:
         obs = rinexobs2(
             fn,
             use,
@@ -259,7 +258,7 @@ def rinexobs(
         # Pandas >= 0.25.0 requires this, regardless of xarray version
         if obs.time.dtype != "datetime64[ns]":
             obs["time"] = obs.time.astype("datetime64[ns]")
-        obs.to_netcdf(outfn, group=group, mode=wmode, encoding=enc)
+        obs.to_netcdf(outfn, group=group, mode=wmode, encoding=enc, format="NETCDF4")
 
     return obs
 

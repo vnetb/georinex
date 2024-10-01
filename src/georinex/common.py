@@ -35,7 +35,7 @@ def check_ram(memneed: int, fn: T.TextIO | Path):
 
     if memneed > 0.5 * mem.available:  # because of array copy Numpy => Xarray
         errmsg = (
-            f"needs {memneed/1e9} GBytes RAM, but only {mem.available/1e9} Gbytes available \n"
+            f"needs {memneed / 1e9} GBytes RAM, but only {mem.available / 1e9} Gbytes available \n"
             "try fast=False to reduce RAM usage, raise a GitHub Issue to let us help"
         )
         if isinstance(fn, Path):
@@ -74,7 +74,7 @@ def determine_time_system(header: dict[T.Hashable, T.Any]) -> str:
     return ts
 
 
-def check_time_interval(interval: float | int | timedelta) -> timedelta:
+def check_time_interval(interval: float | int | timedelta | None) -> timedelta | None:
     if isinstance(interval, (float, int)):
         if interval < 0:
             raise ValueError("time interval must be non-negative")

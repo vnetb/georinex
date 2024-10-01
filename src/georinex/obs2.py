@@ -17,19 +17,20 @@ except ImportError:
 from .rio import opener, rinexinfo
 from .common import determine_time_system, check_ram, check_time_interval, check_unique_times
 
+__all__ = ["rinexobs2", "rinexsystem2", "obsheader2", "obstime2"]
+
 
 def rinexobs2(
     fn: T.TextIO | Path,
-    use: set[str] = None,
-    tlim: tuple[datetime, datetime] = None,
+    use: set[str] | None = None,
+    tlim: tuple[datetime, datetime] | None = None,
     useindicators: bool = False,
-    meas: list[str] = None,
+    meas: list[str] | None = None,
     verbose: bool = False,
     *,
     fast: bool = True,
-    interval: float | int | timedelta = None,
+    interval: float | int | timedelta | None = None,
 ) -> xarray.Dataset:
-
     if isinstance(use, str):
         use = {use}
 
@@ -63,13 +64,13 @@ def rinexobs2(
 def rinexsystem2(
     fn: T.TextIO | Path,
     system: str,
-    tlim: tuple[datetime, datetime] = None,
+    tlim: tuple[datetime, datetime] | None = None,
     useindicators: bool = False,
-    meas: list[str] = None,
+    meas: list[str] | None = None,
     verbose: bool = False,
     *,
     fast: bool = True,
-    interval: float | int | timedelta = None,
+    interval: float | int | timedelta | None = None,
 ) -> xarray.Dataset:
     """
     process RINEX OBS data
@@ -259,8 +260,8 @@ def rinexsystem2(
     for field in hdr["fields"]:
         fields.append(field)
         if useindicators:
-            if field not in ("S1", "S2", "S5"):
-                if field in ("L1", "L2", "L5"):
+            if field not in {"S1", "S2", "S5"}:
+                if field in {"L1", "L2", "L5"}:
                     fields.append(f"{field}lli")
                 else:
                     fields.append(None)
@@ -317,16 +318,20 @@ def rinexsystem2(
 
 
 def _num_times(
-    fn: T.TextIO | Path, Nextra: int, tlim: T.Optional[tuple[datetime, datetime]], verbose: bool
+    fn: T.TextIO | Path, Nextra: int, tlim: tuple[datetime, datetime] | None, verbose: bool
 ):
+    """
+    estimate number of times in a RINEX OBS file
+    """
+
     Nsvmin = 6  # based on GPS only, 20 deg. min elev. at poles
 
     if Nextra:
         """
         estimated number of satellites per file:
-            * RINEX OBS2 files have at least one 80-byte line per time: Nsvmin* ceil(Nobs / 5)
+        RINEX OBS2 files have at least one 80-byte line per time: Nsvmin * ceil(Nobs / 5)
 
-        We open the file and seek because often we're using compressed files
+        Open the file and seek because often we're using compressed files
         that have been decompressed in memory only--there is no on-disk
         uncompressed file.
         """
@@ -337,7 +342,10 @@ def _num_times(
 
         Nt = ceil(filesize / 80 / (Nsvmin * Nextra))
         times = np.empty(Nt, dtype=datetime)
-    else:  # strict preallocation by double-reading file, OK for < 100 MB files
+    else:
+        """
+        strict preallocation by double-reading file, OK for < 100 MB files
+        """
         t = obstime2(fn, verbose=verbose)  # < 10 ms for 24 hour 15 second cadence
         if tlim is not None:
             times = t[(tlim[0] <= t) & (t <= tlim[1])]
@@ -348,11 +356,12 @@ def _num_times(
 
 
 def obsheader2(
-    f: T.TextIO | Path, useindicators: bool = False, meas: list[str] = None
+    f: T.TextIO | Path, useindicators: bool = False, meas: list[str] | None = None
 ) -> dict[T.Hashable, T.Any]:
     """
     End users should use rinexheader()
     """
+
     if isinstance(f, (str, Path)):
         with opener(f, header=True) as h:
             return obsheader2(h, useindicators, meas)
@@ -520,7 +529,7 @@ def obstime2(fn: T.TextIO | Path, verbose: bool = False):
     return times
 
 
-def _skip(f: T.TextIO, ln: str, Nl_sv: int, sv: list[str] = None):
+def _skip(f: T.TextIO, ln: str, Nl_sv: int, sv: list[str] | None = None):
     """
     skip ahead to next time step
     """
@@ -588,7 +597,7 @@ def _timeobs(ln: str) -> datetime:
     )
     # %% check if valid time
     eflag = int(ln[28])
-    if eflag not in (0, 1, 5, 6):  # EPOCH FLAG
+    if eflag not in {0, 1, 5, 6}:  # EPOCH FLAG
         raise ValueError(f"{t}: epoch flag {eflag}")
 
     return t

@@ -16,20 +16,24 @@ from .rio import first_nonblank_line, opener
 # for NetCDF compression. too high slows down with little space savings.
 ENC = {"zlib": True, "complevel": 1, "fletcher32": True}
 
+__all__ = ["load_sp3"]
 
-def load_sp3(fn: Path, outfn: Path) -> xarray.Dataset:
+
+def load_sp3(fn: Path, outfn: Path | None) -> xarray.Dataset:
     """
     The basic format is a position and clock record;
     a second, optional, record contains velocities and clock rates-of-change.
 
     http://epncb.oma.be/ftp/data/format/sp3_docu.txt  (sp3a)
     """
+
     dat: dict[T.Hashable, T.Any] = {}
+
     with opener(fn) as f:
         ln = first_nonblank_line(f)
         assert ln[0] == "#", f"failed to read {fn} line 1"
         # sp3_version = ln[1]
-        dat["t0"] = sp3dt(ln)
+        t0 = sp3dt(ln)
         # Nepoch != number of time steps, at least for some files
         dat["Nepoch"] = int(ln[32:39])
         dat["coord_sys"] = ln[46:51]
@@ -105,6 +109,7 @@ def load_sp3(fn: Path, outfn: Path) -> xarray.Dataset:
     ecefs.append(ecef)
     clocks.append(clock)
     vels.append(vel)
+
     aclock = np.asarray(clocks)
 
     # assemble into final xarray.Dataset
@@ -115,12 +120,14 @@ def load_sp3(fn: Path, outfn: Path) -> xarray.Dataset:
     ds["velocity"] = (("time", "sv", "ECEF"), vels)
     ds["dclock"] = (("time", "sv"), aclock[:, :, 1])
 
+    ds["t0"] = t0
+
     ds.attrs = dat
 
     if outfn:
         outfn = Path(outfn).expanduser()
         enc = {k: ENC for k in ds.data_vars}
-        ds.to_netcdf(outfn, mode="w", encoding=enc)
+        ds.to_netcdf(outfn, mode="w", encoding=enc, format="NETCDF4")
 
     return ds
 

@@ -15,8 +15,12 @@ STARTCOL3 = 4  # column where numerical data starts for RINEX 3
 Nl = {"C": 7, "E": 7, "G": 7, "J": 7, "R": 3, "S": 3, "I": 7}  # number of additional SV lines
 LF = 19  # string length per field
 
+__all__ = ["rinexnav3", "navheader3", "navtime3"]
 
-def rinexnav3(fn: T.TextIO | Path, use: set[str] = None, tlim: tuple[datetime, datetime] = None):
+
+def rinexnav3(
+    fn: T.TextIO | Path, use: set[str] | None = None, tlim: tuple[datetime, datetime] | None = None
+):
     """
     Read RINEX 3.x NAV files
 
@@ -100,7 +104,8 @@ def rinexnav3(fn: T.TextIO | Path, use: set[str] = None, tlim: tuple[datetime, d
             for j, i in enumerate(svi):
                 try:
                     darr[j, compact_index] = [
-                        float(raws[i][LF * k : LF * (k + 1)]) for k in range(len(compact_index))
+                        float(raws[i][LF * k : LF * (k + 1)].strip() or 0)
+                        for k in range(len(compact_index))
                     ]
                 except ValueError:
                     logging.info(f"malformed line for {sv}")
@@ -172,7 +177,6 @@ def _skip(f: T.TextIO, Nl: int):
 
 
 def _time(ln: str) -> datetime:
-
     return datetime(
         year=int(ln[4:8]),
         month=int(ln[9:11]),
@@ -211,7 +215,10 @@ def _sparefields(cf: list[str], sys: str, N: int) -> list[str]:
             cf = cf[:30]
     elif sys == "J":
         # QZSS
-        if N == 29:
+        if N==28:
+            N = 29
+            cf = cf[:29]
+        elif N == 29:
             cf = cf[:29]
         elif N == 30:
             cf = cf[:30]
@@ -233,7 +240,6 @@ def _sparefields(cf: list[str], sys: str, N: int) -> list[str]:
 
 
 def _fields(ln: str, sv_sys: str) -> list[str]:
-
     if sv_sys == "G":
         """
         ftp://igs.org/pub/data/format/rinex303.pdf
@@ -466,7 +472,6 @@ def _fields(ln: str, sv_sys: str) -> list[str]:
 
 
 def navheader3(f: T.TextIO) -> dict[T.Hashable, T.Any]:
-
     if isinstance(f, (str, Path)):
         with opener(f, header=True) as h:
             return navheader3(h)

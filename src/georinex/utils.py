@@ -14,7 +14,6 @@ from .nav3 import navtime3, navheader3
 
 
 def globber(path: Path, glob: list[str]) -> list[Path]:
-
     path = Path(path).expanduser()
     if path.is_file():
         return [path]
@@ -31,7 +30,7 @@ def globber(path: Path, glob: list[str]) -> list[Path]:
 
 def gettime(fn: T.TextIO | Path):
     """
-    get times in RINEX 2/3 file
+    get times in [C]RINEX 2/3 file
     Note: in header,
         * TIME OF FIRST OBS is mandatory
         * TIME OF LAST OBS is optional
@@ -48,6 +47,7 @@ def gettime(fn: T.TextIO | Path):
     times : numpy.ndarray of numpy.datetime64
         1-D vector of epochs in file
     """
+
     info = rinexinfo(fn)
 
     version = info["version"]
@@ -56,14 +56,14 @@ def gettime(fn: T.TextIO | Path):
 
     # %% select function
     if rtype == "obs":
-        if vers == 2:
+        if vers in {1, 2}:
             times = obstime2(fn)
         elif vers == 3:
             times = obstime3(fn)
         else:
             raise ValueError(f"Unknown RINEX version {version} {fn}")
     elif rtype == "nav":
-        if vers == 2:
+        if vers in {1, 2}:
             times = navtime2(fn)
         elif vers == 3:
             times = navtime3(fn)
@@ -97,7 +97,7 @@ def rinexheader(fn: T.TextIO | Path) -> dict[T.Hashable, T.Any]:
     info = rinexinfo(fn)
 
     hdr: dict[T.Hashable, T.Any]
-    if int(info["version"]) in (1, 2):
+    if int(info["version"]) in {1, 2}:
         if info["rinextype"] == "obs":
             hdr = obsheader2(fn)
         elif info["rinextype"] == "nav":
@@ -117,7 +117,7 @@ def rinexheader(fn: T.TextIO | Path) -> dict[T.Hashable, T.Any]:
     return hdr
 
 
-def _tlim(tlim: tuple[datetime, datetime] = None) -> tuple[datetime, datetime]:
+def _tlim(tlim: tuple[datetime, datetime] | None = None) -> tuple[datetime, datetime] | None:
     if tlim is None:
         pass
     elif len(tlim) == 2 and isinstance(tlim[0], datetime):
