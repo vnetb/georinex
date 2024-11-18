@@ -296,7 +296,7 @@ def obstime3(fn: T.TextIO | Path, verbose: bool = False):
                     logging.debug(f"was not a time:\n{ln}")
                     continue
 
-    times = np.asarray(times, dtype="datetime64[ms]")
+    times = np.asarray(times, dtype="datetime64[ns]")
 
     check_unique_times(times)
 
